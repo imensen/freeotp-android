@@ -25,6 +25,7 @@ import java.util.List;
 import org.fedorahosted.freeotp.R;
 import org.fedorahosted.freeotp.Token;
 import org.fedorahosted.freeotp.TokenPersistence;
+import org.fedorahosted.freeotp.UrlPersistence;
 
 import android.annotation.TargetApi;
 import android.app.Activity;
@@ -98,6 +99,13 @@ public class ScanActivity extends Activity implements SurfaceHolder.Callback {
             @Override
             protected void onPostExecute(String result) {
                 super.onPostExecute(result);
+
+                if (UrlPersistence.addWithToast(ScanActivity.this, result))
+                {
+                    finish();
+                    return;
+                }
+
                 Token token = TokenPersistence.addWithToast(ScanActivity.this, result);
                 if (token == null || token.getImage() == null) {
                     finish();
