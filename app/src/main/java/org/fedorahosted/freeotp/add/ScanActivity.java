@@ -36,6 +36,8 @@ import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.ImageView;
+import android.widget.Toast;
+
 import com.squareup.picasso.Callback;
 import com.squareup.picasso.Picasso;
 import io.fotoapparat.Fotoapparat;
@@ -68,6 +70,9 @@ public class ScanActivity extends Activity {
     }
 
     private void addTokenAndFinish(String text) {
+        //do not receive any more broadcasts
+        this.unregisterReceiver(receiver);
+
         if (UrlPersistence.addWithToast(ScanActivity.this, text))
         {
             finish();
@@ -79,10 +84,9 @@ public class ScanActivity extends Activity {
             token = new Token(text);
         } catch (Token.TokenUriInvalidException e) {
             e.printStackTrace();
+            Toast.makeText(ScanActivity.this, "Invalid token", Toast.LENGTH_SHORT).show();
+            return;
         }
-
-        //do not receive any more broadcasts
-        this.unregisterReceiver(receiver);
 
         //check if token already exists
         if (new TokenPersistence(ScanActivity.this).tokenExists(token)) {

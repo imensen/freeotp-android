@@ -30,6 +30,9 @@ android {
     defaultConfig {
         minSdkVersion 23
         targetSdkVersion 27
+        versionCode System.getenv("BUILD_NUMBER") as Integer ?: 74
+        versionName '1.5imensen'
+        project.ext.set("archivesBaseName", "freeotp-" + versionName + "-" + versionCode);
     }
 
     compileSdkVersion 27       // NOTE: update build-tools-* in .travis.yml
