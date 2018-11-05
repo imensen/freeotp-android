@@ -17,12 +17,12 @@ public class DeleteActivity extends BaseActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.delete);
 
-        Token token = new TokenPersistence(this).get(getPosition());
+        final Token token = new TokenPersistence(this).get(getPosition());
         ((TextView) findViewById(R.id.issuer)).setText(token.getIssuer());
         ((TextView) findViewById(R.id.label)).setText(token.getLabel());
         Picasso.with(this)
                 .load(token.getImage())
-                .placeholder(R.drawable.logo)
+                .placeholder(R.mipmap.ic_freeotp_logo_foreground)
                 .into((ImageView) findViewById(R.id.image));
 
         findViewById(R.id.cancel).setOnClickListener(new View.OnClickListener() {
@@ -33,8 +33,9 @@ public class DeleteActivity extends BaseActivity {
         });
 
         findViewById(R.id.delete).setOnClickListener(new View.OnClickListener() {
-            @Override
             public void onClick(View v) {
+                //delete the image that was copied to storage, before deleting the token
+                token.deleteImage();
                 new TokenPersistence(DeleteActivity.this).delete(getPosition());
                 finish();
             }

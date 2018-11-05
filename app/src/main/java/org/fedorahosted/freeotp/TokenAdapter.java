@@ -36,6 +36,7 @@ import android.view.ViewGroup;
 import android.widget.PopupMenu;
 import android.widget.Toast;
 
+import org.apache.commons.codec.binary.Hex;
 import org.fedorahosted.freeotp.data.Encrypter;
 import org.fedorahosted.freeotp.data.TargetData;
 import org.fedorahosted.freeotp.edit.DeleteActivity;
@@ -66,8 +67,9 @@ public class TokenAdapter extends BaseReorderableAdapter {
         mTokenPersistence = new TokenPersistence(ctx);
         mLayoutInflater = (LayoutInflater) ctx.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
         mClipMan = (ClipboardManager) ctx.getSystemService(Context.CLIPBOARD_SERVICE);
+        mTokenCodes = new HashMap<>();
         mConnectivityManager = (ConnectivityManager) ctx.getSystemService(Context.CONNECTIVITY_SERVICE);
-        mTokenCodes = new HashMap<String, TokenCode>();
+
         registerDataSetObserver(new DataSetObserver() {
             @Override
             public void onChanged() {
@@ -139,7 +141,8 @@ public class TokenAdapter extends BaseReorderableAdapter {
                 // Increment the token.
                 Token token = tp.get(position);
                 TokenCode codes = token.generateCodes();
-                tp.save(token);
+                //save token. Image wasn't changed here, so just save it in sync
+                new TokenPersistence(ctx).save(token);
 
                 // Copy code to clipboard.
                 mClipMan.setPrimaryClip(ClipData.newPlainText(null, codes.getCurrentCode()));
@@ -219,7 +222,7 @@ public class TokenAdapter extends BaseReorderableAdapter {
                     return null;
                 }
 
-                Encrypter encrypter = new Encrypter(org.apache.commons.codec.binary.Hex.decodeHex(params[4].toCharArray()));
+                Encrypter encrypter = new Encrypter(Hex.decodeHex(params[4].toCharArray()));
 
                 // Get the internet address of the specified host
                 InetAddress address = InetAddress.getByName(host);

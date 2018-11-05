@@ -37,6 +37,8 @@ public class AboutActivity extends Activity {
     }
 
     @Override
+    @SuppressWarnings("deprecation")
+    //suppress because Html.fromHtml(String, int) requires minSdkVersion 24
     public void onStart() {
         super.onStart();
 
@@ -47,7 +49,7 @@ public class AboutActivity extends Activity {
             PackageManager pm = getPackageManager();
             PackageInfo info = pm.getPackageInfo(getPackageName(), 0);
             String version = res.getString(R.string.about_version, info.versionName, info.versionCode);
-            tv = (TextView) findViewById(R.id.about_version);
+            tv = findViewById(R.id.about_version);
             tv.setText(version);
         } catch (PackageManager.NameNotFoundException e) {
             e.printStackTrace();
@@ -55,21 +57,14 @@ public class AboutActivity extends Activity {
 
         String apache2 = res.getString(R.string.link_apache2);
         String license = res.getString(R.string.about_license, apache2);
-        tv = (TextView) findViewById(R.id.about_license);
+        tv = findViewById(R.id.about_license);
         tv.setMovementMethod(LinkMovementMethod.getInstance());
         tv.setText(Html.fromHtml(license));
 
         String lwebsite = res.getString(R.string.link_website);
         String swebsite = res.getString(R.string.about_website, lwebsite);
-        tv = (TextView) findViewById(R.id.about_website);
+        tv = findViewById(R.id.about_website);
         tv.setMovementMethod(LinkMovementMethod.getInstance());
         tv.setText(Html.fromHtml(swebsite));
-
-        String problem = res.getString(R.string.link_report_a_problem);
-        String help = res.getString(R.string.link_ask_for_help);
-        String feedback = res.getString(R.string.about_feedback, problem, help);
-        tv = (TextView) findViewById(R.id.about_feedback);
-        tv.setMovementMethod(LinkMovementMethod.getInstance());
-        tv.setText(Html.fromHtml(feedback));
     }
 }

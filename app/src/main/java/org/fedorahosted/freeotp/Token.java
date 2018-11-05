@@ -20,6 +20,7 @@
 
 package org.fedorahosted.freeotp;
 
+import java.io.File;
 import java.nio.ByteBuffer;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
@@ -42,6 +43,11 @@ public class Token {
         HOTP, TOTP
     }
 
+    private static char[] STEAMCHARS = new char[] {
+            '2', '3', '4', '5', '6', '7', '8', '9', 'B', 'C',
+            'D', 'F', 'G', 'H', 'J', 'K', 'M', 'N', 'P', 'Q',
+            'R', 'T', 'V', 'W', 'X', 'Y'};
+
     private String issuerInt;
     private String issuerExt;
     private String issuerAlt;
@@ -57,23 +63,12 @@ public class Token {
     private int period;
 
     private Token(Uri uri, boolean internal) throws TokenUriInvalidException {
-        if (!uri.getScheme().equals("otpauth"))
-            throw new TokenUriInvalidException();
-
-        if (uri.getAuthority().equals("totp"))
-            type = TokenType.TOTP;
-        else if (uri.getAuthority().equals("hotp"))
-            type = TokenType.HOTP;
-        else
-            throw new TokenUriInvalidException();
+        validateTokenURI(uri);
 
         String path = uri.getPath();
-        if (path == null)
-            throw new TokenUriInvalidException();
-
         // Strip the path of its leading '/'
-        for (int i = 0; path.charAt(i) == '/'; i++)
-            path = path.substring(1);
+        path = path.replaceFirst("/","");
+
         if (path.length() == 0)
             throw new TokenUriInvalidException();
 
@@ -97,7 +92,7 @@ public class Token {
             if (d == null)
                 d = "6";
             digits = Integer.parseInt(d);
-            if (digits != 6 && digits != 8)
+            if (!issuerExt.equals("Steam") && digits != 6 && digits != 8)
                 throw new TokenUriInvalidException();
         } catch (NumberFormatException e) {
             throw new TokenUriInvalidException();
@@ -108,6 +103,7 @@ public class Token {
             if (p == null)
                 p = "30";
             period = Integer.parseInt(p);
+            period = (period > 0) ? period : 30; // Avoid divide-by-zero
         } catch (NumberFormatException e) {
             throw new TokenUriInvalidException();
         }
@@ -140,6 +136,26 @@ public class Token {
         }
     }
 
+    private void validateTokenURI(Uri uri) throws TokenUriInvalidException{
+        if (uri == null) throw new TokenUriInvalidException();
+
+        if (uri.getScheme() == null || !uri.getScheme().equals("otpauth")){
+            throw new TokenUriInvalidException();
+        }
+
+        if (uri.getAuthority() == null) throw new TokenUriInvalidException();
+
+        if (uri.getAuthority().equals("totp")) {
+            type = TokenType.TOTP;
+        } else if (uri.getAuthority().equals("hotp"))
+            type = TokenType.HOTP;
+        else {
+            throw new TokenUriInvalidException();
+        }
+
+        if (uri.getPath() == null) throw new TokenUriInvalidException();
+    }
+
     private String getHOTP(long counter) {
         // Encode counter in network byte order
         ByteBuffer bb = ByteBuffer.allocate(8);
@@ -165,12 +181,21 @@ public class Token {
             binary |= (digest[off + 1] & 0xff) << 0x10;
             binary |= (digest[off + 2] & 0xff) << 0x08;
             binary |= (digest[off + 3] & 0xff);
-            binary = binary % div;
 
-            // Zero pad
-            String hotp = Integer.toString(binary);
-            while (hotp.length() != digits)
-                hotp = "0" + hotp;
+            String hotp = "";
+            if (issuerExt.equals("Steam")) {
+                for (int i = 0; i < digits; i++) {
+                    hotp += STEAMCHARS[binary % STEAMCHARS.length];
+                    binary /= STEAMCHARS.length;
+                }
+            } else {
+                binary = binary % div;
+
+                // Zero pad
+                hotp = Integer.toString(binary);
+                while (hotp.length() != digits)
+                    hotp = "0" + hotp;
+            }
 
             return hotp;
         } catch (InvalidKeyException e) {
@@ -285,7 +310,22 @@ public class Token {
         return toUri().toString();
     }
 
+    /**
+     * delete image, which is attached to the token from storage
+     */
+    public void deleteImage() {
+        Uri imageUri = getImage();
+        if (imageUri != null) {
+            File image = new File(imageUri.getPath());
+            if (image.exists())
+                image.delete();
+        }
+    }
+
     public void setImage(Uri image) {
+        //delete old token image, before assigning the new one
+        deleteImage();
+
         imageAlt = null;
         if (image == null)
             return;
